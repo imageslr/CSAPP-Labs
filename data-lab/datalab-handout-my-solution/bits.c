@@ -1,7 +1,7 @@
 /* 
  * CS:APP Data Lab 
  * 
- * <Please put your name and userid here>
+ * Images.
  * 
  * bits.c - Source file with your solutions to the Lab.
  *          This is the file you will hand in to your instructor.
@@ -47,6 +47,10 @@ INTEGER CODING RULES:
   2. Function arguments and local variables (no global variables).
   3. Unary integer operations ! ~
   4. Binary integer operations & ^ | + << >>
+
+  1. 只允许使用 0~255 的整数
+  2. 只允许使用一元操作符 ! ~ 
+  3. 只允许使用二元操作符 & ^ | + << >> 
     
   Some of the problems restrict the set of allowed operators even further.
   Each "Expr" may consist of multiple operators. You are not restricted to
@@ -61,6 +65,13 @@ INTEGER CODING RULES:
   6. Use any form of casting.
   7. Use any data type other than int.  This implies that you
      cannot use arrays, structs, or unions.
+
+  1. 不允许使用任何控制流
+  2. 不允许使用宏
+  3. 不能声明、调用任何函数
+  5. 不能使用其他操作符
+  6. 不能使用类型转换
+  7. 不能使用 int 以外的类型
 
  
   You may assume that your machine:
@@ -95,14 +106,16 @@ the coding rules are less strict.  You are allowed to use looping and
 conditional control.  You are allowed to use both ints and unsigneds.
 You can use arbitrary integer and unsigned constants.
 
+允许使用循环、条件控制；int、无符号数。
+
 You are expressly forbidden to:
   1. Define or use any macros.
   2. Define any additional functions in this file.
   3. Call any functions.
-  4. Use any form of casting.
+  4. Use any form of casting. 不能使用类型转换
   5. Use any data type other than int or unsigned.  This means that you
-     cannot use arrays, structs, or unions.
-  6. Use any floating point data types, operations, or constants.
+     cannot use arrays, structs, or unions. 不能使用整型和无符号数以外的数据类型
+  6. Use any floating point data types, operations, or constants. 不能使用浮点数
 
 
 NOTES:
@@ -129,7 +142,6 @@ NOTES:
  *      the correct answers.
  */
 
-
 #endif
 /* 
  * bitAnd - x&y using only ~ and | 
@@ -138,10 +150,10 @@ NOTES:
  *   Max ops: 8
  *   Rating: 1
  */
-int bitAnd(int x, int y) {
-  return 2;
+int bitAnd(int x, int y)
+{
+  return ~(~x | ~y);
 }
-
 
 /* 
  * getByte - Extract byte n from word x
@@ -151,16 +163,11 @@ int bitAnd(int x, int y) {
  *   Max ops: 6
  *   Rating: 2
  */
-int getByte(int x, int n) {
-
-
-
-
-
-
-
-  return 2;
-
+int getByte(int x, int n)
+{
+  int res = 0xff;
+  x = x >> (n << 3);
+  return res & x;
 }
 /* 
  * logicalShift - shift x to the right by n, using a logical shift
@@ -170,8 +177,12 @@ int getByte(int x, int n) {
  *   Max ops: 20
  *   Rating: 3 
  */
-int logicalShift(int x, int n) {
-  return 2;
+int logicalShift(int x, int n)
+{
+  int pos = 32 + (~n + 1);     // 1 向左移 32-n 位，再减 1，可以得到后 32-n 位全为 1 的二进制数
+  int y = 1 << (pos + ~1 + 1); // y == 2^{pos-1}
+  x = x >> n;
+  return x & (y + ~1 + 1 + y);
 }
 /*
  * bitCount - returns count of number of 1's in word
@@ -180,8 +191,23 @@ int logicalShift(int x, int n) {
  *   Max ops: 40
  *   Rating: 4
  */
-int bitCount(int x) {
-  return 2;
+int bitCount(int x)
+{
+
+  int _m1 = 0x55 | 0x55 << 8;
+  int _m2 = 0x33 | 0x33 << 8;
+  int _m3 = 0x0f | 0x0f << 8;
+  int m1 = _m1 | (_m1 << 16);   // 01010101....0101
+  int m2 = _m2 | (_m2 << 16);   // 00110011....0011
+  int m3 = _m3 | (_m3 << 16);   // 00001111....00001111
+  int m4 = 0xff | (0xff << 16); // 0000000011111111....0000000011111111
+  int m5 = 0xff | (0xff << 8);  // 00000000000000001111111111111111
+  int ans = (x & m1) + ((x >> 1) & m1);
+  ans = (ans & m2) + ((ans >> 2) & m2);
+  ans = (ans & m3) + ((ans >> 4) & m3);
+  ans = (ans & m4) + ((ans >> 8) & m4);
+  ans = (ans & m5) + ((ans >> 16) & m5);
+  return ans;
 }
 /* 
  * bang - Compute !x without using !
@@ -190,7 +216,8 @@ int bitCount(int x) {
  *   Max ops: 12
  *   Rating: 4 
  */
-int bang(int x) {
+int bang(int x)
+{
   return 2;
 }
 /* 
@@ -199,7 +226,8 @@ int bang(int x) {
  *   Max ops: 4
  *   Rating: 1
  */
-int tmin(void) {
+int tmin(void)
+{
   return 2;
 }
 /* 
@@ -211,7 +239,8 @@ int tmin(void) {
  *   Max ops: 15
  *   Rating: 2
  */
-int fitsBits(int x, int n) {
+int fitsBits(int x, int n)
+{
   return 2;
 }
 /* 
@@ -222,8 +251,9 @@ int fitsBits(int x, int n) {
  *   Max ops: 15
  *   Rating: 2
  */
-int divpwr2(int x, int n) {
-    return 2;
+int divpwr2(int x, int n)
+{
+  return 2;
 }
 /* 
  * negate - return -x 
@@ -232,7 +262,8 @@ int divpwr2(int x, int n) {
  *   Max ops: 5
  *   Rating: 2
  */
-int negate(int x) {
+int negate(int x)
+{
   return 2;
 }
 /* 
@@ -242,7 +273,8 @@ int negate(int x) {
  *   Max ops: 8
  *   Rating: 3
  */
-int isPositive(int x) {
+int isPositive(int x)
+{
   return 2;
 }
 /* 
@@ -252,7 +284,8 @@ int isPositive(int x) {
  *   Max ops: 24
  *   Rating: 3
  */
-int isLessOrEqual(int x, int y) {
+int isLessOrEqual(int x, int y)
+{
   return 2;
 }
 /*
@@ -262,7 +295,8 @@ int isLessOrEqual(int x, int y) {
  *   Max ops: 90
  *   Rating: 4
  */
-int ilog2(int x) {
+int ilog2(int x)
+{
   return 2;
 }
 /* 
@@ -276,8 +310,9 @@ int ilog2(int x) {
  *   Max ops: 10
  *   Rating: 2
  */
-unsigned float_neg(unsigned uf) {
- return 2;
+unsigned float_neg(unsigned uf)
+{
+  return 2;
 }
 /* 
  * float_i2f - Return bit-level equivalent of expression (float) x
@@ -288,7 +323,8 @@ unsigned float_neg(unsigned uf) {
  *   Max ops: 30
  *   Rating: 4
  */
-unsigned float_i2f(int x) {
+unsigned float_i2f(int x)
+{
   return 2;
 }
 /* 
@@ -302,6 +338,7 @@ unsigned float_i2f(int x) {
  *   Max ops: 30
  *   Rating: 4
  */
-unsigned float_twice(unsigned uf) {
+unsigned float_twice(unsigned uf)
+{
   return 2;
 }
