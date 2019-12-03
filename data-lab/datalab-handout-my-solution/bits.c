@@ -218,7 +218,7 @@ int bitCount(int x)
  */
 int bang(int x)
 {
-  return 2;
+  return ~((x | (~x + 1)) >> 31) & 1;
 }
 /* 
  * tmin - return minimum two's complement integer 
@@ -228,7 +228,7 @@ int bang(int x)
  */
 int tmin(void)
 {
-  return 2;
+  return 1 << 31;
 }
 /* 
  * fitsBits - return 1 if x can be represented as an 
@@ -241,7 +241,9 @@ int tmin(void)
  */
 int fitsBits(int x, int n)
 {
-  return 2;
+  // ~1 +1 == ~0
+  // return !(((x >> (n + ~0)) + 1) >> 1);
+  return !(x >> (n + ~0)) | !((x >> (n + ~0)) + 1);
 }
 /* 
  * divpwr2 - Compute x/(2^n), for 0 <= n <= 30
