@@ -255,7 +255,10 @@ int fitsBits(int x, int n)
  */
 int divpwr2(int x, int n)
 {
-  return 2;
+  int bias = (1 << n) + (~0);
+  int mask = x >> 31;
+  bias = bias & mask;
+  return (x + bias) >> n;
 }
 /* 
  * negate - return -x 
@@ -266,7 +269,7 @@ int divpwr2(int x, int n)
  */
 int negate(int x)
 {
-  return 2;
+  return ~x + 1;
 }
 /* 
  * isPositive - return 1 if x > 0, return 0 otherwise 
@@ -277,7 +280,7 @@ int negate(int x)
  */
 int isPositive(int x)
 {
-  return 2;
+  return !(x >> 31) & !!x;
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
@@ -288,7 +291,11 @@ int isPositive(int x)
  */
 int isLessOrEqual(int x, int y)
 {
-  return 2;
+  // y - x >= 0 直接做减法可能负溢出
+  int diffSign = !!((x >> 31) ^ (y >> 31));
+  int diff = y + ~x + 1;
+  // 符号不同，x 必然小于 0；符号相同，差非负，直接做减法不会溢出
+  return (diffSign & x >> 31) | (!diffSign & !(diff >> 31));
 }
 /*
  * ilog2 - return floor(log base 2 of x), where x > 0
@@ -299,7 +306,16 @@ int isLessOrEqual(int x, int y)
  */
 int ilog2(int x)
 {
-  return 2;
+  // 要找左侧第一个 1 的位置
+  // 每次将区间大小缩小一半
+  // ans 为区间右边界。最低位为 0，ans 从 0 增加
+  int ans = 0;
+  ans = (!!(x >> 16)) << 4;                // ans = ans + 16?
+  ans = ans + ((!!(x >> (8 + ans))) << 3); // ans = ans + 8?
+  ans = ans + ((!!(x >> (4 + ans))) << 2); // ans = ans + 4?
+  ans = ans + ((!!(x >> (2 + ans))) << 1); // ans = ans + 2?
+  ans = ans + (!!(x >> (1 + ans)));        // ans = ans + 2?
+  return ans;
 }
 /* 
  * float_neg - Return bit-level equivalent of expression -f for
