@@ -330,7 +330,18 @@ int ilog2(int x)
  */
 unsigned float_neg(unsigned uf)
 {
-  return 2;
+  // 符号位取反
+  unsigned neg = uf ^ 0x80000000;
+
+  // 判断指数位 1~9 位是否全为 1，并且尾数位不为 0
+  unsigned nan = uf & 0x7fffffff;
+
+  if (nan > 0x7f800000) // 0x7f800000: 1~9位为 1
+  {
+    neg = uf;
+  }
+
+  return neg;
 }
 /* 
  * float_i2f - Return bit-level equivalent of expression (float) x
@@ -343,8 +354,98 @@ unsigned float_neg(unsigned uf)
  */
 unsigned float_i2f(int x)
 {
-  return 2;
+  int pos = 31;                               // 左侧第一个 1 的位置，从左到右为 31~0
+  int signx = x & 0x80000000;                 // 符号位
+  int exp;                                    // 指数位
+  int t, tt, shifted_bits, shifted_len, mask; // 临时变量
+
+  // 特殊情况，直接返回
+  if (x == 0)
+  {
+    return 0;
+  }
+
+  // 如果 x 为负数，将其取反
+  // 注意这里一定要取反，并且 x 取反后位级表示会发生改变，
+  // 第一个 1 的位置会改变，不仅仅只有符号位取反
+  if (signx)
+  {
+    x = -x;
+  }
+
+  // 找左侧第一个 1 的位置
+  // 能用 while，就不需要用 11 题的分治的方法了
+  while (!((1 << pos) & x))
+  {
+    pos -= 1;
+  }
+
+  // 尾数部分：把左侧第一个 1 移动到倒数第 24 位，需要根据 pos 对 x 左移或右移
+  if (pos < 23)
+  {
+    // 向左移位，不需要考虑舍入的问题
+    x <<= (23 - pos);
+  }
+  else
+  {
+    /**
+     * 向右移位，需要舍入
+     * 共分为 3 种情况：进一、舍去、向偶数舍入
+     * （这部分内容在书的第 86 页）
+     * 
+     * 假设最后几位为 XYYY...，要舍入到 X 这一位：
+     * 
+     * 1. 如果 YYY... == 100...，即等于中间值，需要向偶数舍入
+     *   向偶数舍入分为两种情况：
+     *   1.1 如果 X 是 1，说明舍入后是奇数，因此要进一
+     *   1.2 如果 X 是 0，说明舍入后是偶数，直接舍去 YYY...
+     * 
+     * 其他情况就是向上或向下舍入：
+     * 2. 如果 YYY... > 100...，即大于中间值，要进一
+     * 3. 如果 YYY... < 100...，即小于中间值，要舍去
+     * 
+     * 进一的时候可能溢出，因此要按照这个顺序：
+     * ① 先舍入
+     * ② 再判断是否溢出，如果溢出，pos + 1
+     * ③ 最后再移位 / 计算指数部分
+     */
+
+    // 比较 YYY... 与 100...，YYY...是要被舍掉的位
+    shifted_len = pos - 23;
+    tt = 1 << shifted_len; // 00..1000..0
+    t = tt >> 1;           // 00...100..0
+    mask = tt - 1;         // 00...111..1
+    shifted_bits = x & mask;
+
+    // 向偶数舍入，且需要进 1
+    if (shifted_bits == t)
+    {
+      if (x & tt)
+        x += t;
+    }
+    // 向上舍入
+    if (shifted_bits > t)
+    {
+      x += t;
+    }
+
+    // 判断是否因为进一而溢出
+    if (x & (1 << (pos + 1)))
+    {
+      pos++;
+    }
+
+    // 移位
+    x = x >> shifted_len;
+  }
+  x &= 0x7fffff; // x 只保留尾数部分
+
+  // 指数部分：e = E + 2^7-1
+  exp = (pos + 127) << 23;
+
+  return x | signx | exp;
 }
+
 /* 
  * float_twice - Return bit-level equivalent of expression 2*f for
  *   floating point argument f.
