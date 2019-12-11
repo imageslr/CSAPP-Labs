@@ -459,5 +459,33 @@ unsigned float_i2f(int x)
  */
 unsigned float_twice(unsigned uf)
 {
-  return 2;
+  int _exp = uf & 0x7f800000;
+  int exp = _exp >> 23;
+  int frac = uf & 0x7fffff;
+  int sign = (uf >> 31) & 1;
+
+  // 0
+  if (uf == 0 || uf == 0x80000000)
+  {
+    return uf;
+  }
+
+  // 无穷大、NaN
+  if (exp == 0xff)
+  {
+    return uf;
+  }
+
+  // 规格化的
+  if (exp > 0)
+  {
+    exp += 1;
+  }
+  else
+  {
+    // 非规格化的，其实这种情况就相当于指数位和尾数位整体左移 1 位
+    return ((uf & (1 << 31)) | (uf << 1));
+  }
+
+  return (sign << 31) | (exp << 23) | frac;
 }
